@@ -1,8 +1,15 @@
 [project]
 name = "job-search-api"
 version = "0.1.0"
+<<<<<<< HEAD
 dependencies = [
 	"fastapi[standard]",
+=======
+description = "CS 3321 Project - Job Search API"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+>>>>>>> bf52551 (Implemented  /stats logic and route with mock data)
 ]
 
 [dependency-groups]
@@ -40,7 +47,6 @@ exclude_lines = [
     "raise NotImplementedError",
     "if __name__ == \"__main__\":",
     "if TYPE_CHECKING:",
-    "@abstractmethod",
-    "@abc.abstractmethod",
+    " @abstractmethod",
+    " @abc.abstractmethod",
 ]
-
