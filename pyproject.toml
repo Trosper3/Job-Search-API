@@ -1,6 +1,10 @@
 [project]
+name = "job-search-api"
+version = "0.1.0"
+description = "CS 3321 Project - Job Search API"
 dependencies = [
-	"fastapi"
+    "fastapi",
+    "uvicorn",
 ]
 
 [dependency-groups]
@@ -38,7 +42,6 @@ exclude_lines = [
     "raise NotImplementedError",
     "if __name__ == \"__main__\":",
     "if TYPE_CHECKING:",
-    "@abstractmethod",
-    "@abc.abstractmethod",
+    " @abstractmethod",
+    " @abc.abstractmethod",
 ]
-
