@@ -1,6 +1,8 @@
 [project]
+name = "job-search-api"
+version = "0.1.0"
 dependencies = [
-	"fastapi"
+	"fastapi[standard]",
 ]
 
 [dependency-groups]

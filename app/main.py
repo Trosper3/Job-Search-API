@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from app.modules.analyze.routes import router as analyze_router
 from app.modules.jobs.routes import router as jobs_router
 
 app = FastAPI(title = "Job Search API",
@@ -7,6 +8,7 @@ app = FastAPI(title = "Job Search API",
 
 # Include the jobs router
 app.include_router(jobs_router, prefix="/jobs", tags=["jobs"])
+app.include_router(analyze_router, prefix="/analyze", tags=["analyze"])
 
 @app.get("/")
 async def root():
