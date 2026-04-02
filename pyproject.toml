@@ -1,6 +1,12 @@
 [project]
+name = "job-search-api"
+version = "0.1.0"
+description = "CS 3321 Project - Job Search API"
 dependencies = [
-	"fastapi"
+    "fastapi",
+    "httpx>=0.28.1",
+    "pytest-cov>=7.1.0",
+    "uvicorn",
 ]
 
 [dependency-groups]
@@ -10,6 +16,7 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
+pythonpath = ["."]
 testpaths = ["app/tests"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
@@ -38,7 +45,6 @@ exclude_lines = [
     "raise NotImplementedError",
     "if __name__ == \"__main__\":",
     "if TYPE_CHECKING:",
-    "@abstractmethod",
-    "@abc.abstractmethod",
+    " @abstractmethod",
+    " @abc.abstractmethod",
 ]
-
