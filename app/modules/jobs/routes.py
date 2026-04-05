@@ -1,13 +1,19 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, Query
+from app.modules.jobs.service import fetch_jobs
 
 router = APIRouter (
     tags=["jobs"]
 )
 
 @router.get("")
-async def get_jobs(q: str = ""):
+async def get_jobs(q: str = Query(..., description="Enter job title or keywords to search for")):
     """
-    Skeleton route for fetching jobs.
-    Later, this will call the Adzuna Job Search API."""
+Fetch jobs from Adzuna API based on the search query provided by the user.
+Example: GET /jobs?q=python
+    """
 
-    return {"message": f"Yay! Jobs endpoint is working", "query": q}
+    try:
+        results = await fetch_jobs(q)
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
