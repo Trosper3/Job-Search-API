@@ -1,16 +1,12 @@
 [project]
 name = "job-search-api"
 version = "0.1.0"
-<<<<<<< HEAD
-dependencies = [
-	"fastapi[standard]",
-=======
 description = "CS 3321 Project - Job Search API"
-requires-python = ">=3.11"
 dependencies = [
     "fastapi",
+    "httpx>=0.28.1",
+    "pytest-cov>=7.1.0",
     "uvicorn",
->>>>>>> bf52551 (Implemented  /stats logic and route with mock data)
 ]
 
 [dependency-groups]

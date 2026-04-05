@@ -5,7 +5,7 @@ router = APIRouter(
     tags=["stats"]
 )
 
-@router.get("/stats")
+@router.get("/")
 async def get_job_stats(q: str = ""):
     """
     Computes statistics for a given job search query.
