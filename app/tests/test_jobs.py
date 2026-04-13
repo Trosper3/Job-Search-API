@@ -13,14 +13,24 @@ from app.modules.jobs import service as jobs_service
 client = TestClient(app)
 
 
-def test_jobs_endpoint_success():
+def test_jobs_endpoint_success(mock_adzuna_response):
     """Returns the expected payload for a valid jobs query."""
     response = client.get("/jobs", params={"q": "python"})
 
     assert response.status_code == 200
+
     assert response.json() == {
-        "message": "Yay! Jobs endpoint is working",
-        "query": "python",
+        "total_found": 1,
+        "jobs": [
+            {
+                "id": "123",
+                "title": "Python Developer",
+                "company": "IBM",
+                "location": "Remote",
+                "description": "Build APIs",
+                "url": "https://example.com/job-123"
+            }
+        ]
     }
 
 
