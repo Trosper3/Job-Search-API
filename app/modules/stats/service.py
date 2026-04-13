@@ -1,37 +1,50 @@
 from collections import Counter
 
-def calculate_job_stats(adzuna_data):
-    # Extract the list of jobs from the JSON dictionary
-    jobs_list = adzuna_data.get("results", [])
+def calculate_job_stats(jobs_data: dict) -> dict:
+    """
+    Calculates statistics from the live Adzuna jobs data.
+    """
+    # 1. Extract the actual list of jobs from Jerri's dictionary
+    jobs_list = jobs_data.get("jobs", [])
 
-    # 1. Calculate Total Jobs
+    # Handle the empty edge case gracefully
+    if not jobs_list:
+        return {
+            "total_jobs": 0,
+            "remote_jobs": 0,
+            "top_companies": [],
+            "top_locations": []
+        }
+
     total_jobs = len(jobs_list)
-
-    # 2. Calculate Remote Jobs
     remote_jobs = 0
+    companies = []
+    locations = []
+
+    # 2. Loop through the live data to do our math
     for job in jobs_list:
-        location_name = job.get("location", {}).get("display_name", "").lower()
-        description = job.get("description", "").lower()
+        title = (job.get("title") or "").lower()
+        location = (job.get("location") or "").lower()
         
-        # Check if the job mentions remote work
-        if "remote" in location_name or "remote" in description:
+        # We use 'Unknown' as a fallback if Adzuna is missing data
+        company_name = job.get("company") or "Unknown"
+        location_name = job.get("location") or "Unknown"
+
+        # Check if the job is remote based on title or location
+        if "remote" in title or "remote" in location:
             remote_jobs += 1
 
-    # 3. Calculate Top Companies
-    company_names = []
-    for job in jobs_list:
-        # Grab the company name, default to "Unknown" if it's missing
-        name = job.get("company", {}).get("display_name", "Unknown")
-        company_names.append(name)
-    
-    # Use Counter to find the most frequently occurring companies
-    company_tally = Counter(company_names)
-    # Grab the top 3 most common companies
-    top_companies = [company[0] for company in company_tally.most_common(3)]
+        companies.append(company_name)
+        locations.append(location_name)
 
-    # Return the final formatted statistics
+    # 3. Use Python's Counter to find the 3 most common companies and locations
+    top_companies = [comp for comp, count in Counter(companies).most_common(3)]
+    top_locations = [loc for loc, count in Counter(locations).most_common(3)]
+
+    # Return the clean, lowercase dictionary
     return {
-        "Total_jobs": total_jobs,
-        "Remote_jobs": remote_jobs,
-        "top_companies": top_companies
+        "total_jobs": total_jobs,
+        "remote_jobs": remote_jobs,
+        "top_companies": top_companies,
+        "top_locations": top_locations
     }
