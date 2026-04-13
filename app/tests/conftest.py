@@ -29,8 +29,8 @@ def mock_adzuna_response():
 
     # patch the client and credientials globally for all tests
     with (
-        patch("app.modules.jobs.service.ADZUNA_APP_ID", "test_app_id"),
-        patch("app.modules.jobs.service.ADZUNA_APP_KEY", "test_app_key"),
+        patch("job_search_app.job_search.AdzunaJobSearch.app_id", "test_app_id"),
+        patch("job_search_app.job_search.AdzunaJobSearch.app_key", "test_app_key"),
         patch("app.modules.jobs.service.httpx.AsyncClient") as mock_async_client
     ):
         # set the mock client to be returned whenever AsyncClient is instantiated

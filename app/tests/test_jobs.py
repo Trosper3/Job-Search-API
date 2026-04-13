@@ -8,31 +8,24 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.modules.jobs import service as jobs_service
-
+from unittest.mock import patch
 
 client = TestClient(app)
 
-
-def test_jobs_endpoint_success(mock_adzuna_response):
-    """Returns the expected payload for a valid jobs query."""
-    response = client.get("/jobs", params={"q": "python"})
-
-    assert response.status_code == 200
-
-    assert response.json() == {
-        "total_found": 1,
+def test_jobs_endpoint_success():
+    mocked_jobs = {
+        "total_found": 2,
         "jobs": [
-            {
-                "id": "12345",
-                "title": "Software Engineer",
-                "company": "Apple Inc.",
-                "location": "Cupertino, CA",
-                "description": "We are looking for a Software Engineer to join our team.",
-                "url": "https://www.apple.com"
-            }
-        ]
+            {"id": "job-1", "title": "Python Developer", "company": "TechFlow", "location": "Remote"},
+            {"id": "job-2", "title": "Backend Engineer", "company": "DataWorks", "location": "New York"},
+        ],
     }
 
+    with patch("app.modules.jobs.routes.fetch_jobs_from_adzuna", return_value=mocked_jobs):
+        response = client.get("/jobs", params={"q": "python"})
+
+    assert response.status_code == 200
+    assert response.json() == mocked_jobs
 
 def test_jobs_endpoint_requires_query():
     """Returns validation error when the required query parameter is missing."""

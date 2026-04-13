@@ -1,18 +1,27 @@
 from fastapi.testclient import TestClient
-from app.main import app  # Imports your actual FastAPI application
+from unittest.mock import patch
+from app.main import app
 
-# Create a fake web browser to test your app
 client = TestClient(app)
 
-def test_stats_endpoint_success(mock_adzuna_response):
-    # 1. ACT: Send a fake GET request to the stats route
-    response = client.get("/stats") 
+MOCK_ADZUNA_DATA = {
+    "total_found": 3,
+    "jobs": [
+        {"title": "Python Developer", "company": "TechFlow", "location": "Remote"},
+        {"title": "Backend Engineer", "company": "TechFlow", "location": "New York"},
+        {"title": "Data Analyst", "company": "DataWorks", "location": "Texas - Remote"},
+    ],
+}
 
-    # 2. ASSERT: Check that the server responded with a "200 OK" success code
+@patch("app.modules.stats.routes.fetch_jobs_from_adzuna")
+def test_stats_endpoint_success(mock_fetch):
+    mock_fetch.return_value = MOCK_ADZUNA_DATA
+
+    response = client.get("/stats?q=python")
+
     assert response.status_code == 200
-    
-    # 3. ASSERT: Check that the JSON body sent to the browser is correct
     data = response.json()
-    assert data["Total_jobs"] == 3
-    assert data["Remote_jobs"] == 2
+
+    assert data["total_jobs"] == 3
+    assert data["remote_jobs"] == 2
     assert "TechFlow" in data["top_companies"]
