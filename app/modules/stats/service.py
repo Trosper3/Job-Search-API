@@ -4,7 +4,7 @@ def calculate_job_stats(jobs_data: dict) -> dict:
     """
     Calculates statistics from the live Adzuna jobs data.
     """
-    # 1. Extract the actual list of jobs from Jerri's dictionary
+    # 1. Extract the list of jobs from the {"total_found": int, "jobs": list} dictionary that the jobs/service.py function returned
     jobs_list = jobs_data.get("jobs", [])
 
     # Handle the empty edge case gracefully
