@@ -1,8 +1,7 @@
 """Pytest configuration and shared fixtures."""
 import pytest
+from unittest.mock import AsyncMock, patch
 
 
 @pytest.fixture
-def sample_fixture():
-    """Sample fixture for testing."""
-    return {"test": "data"}
+def mock_adzuna_response():
