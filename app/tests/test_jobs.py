@@ -12,7 +12,6 @@ from unittest.mock import patch
 
 client = TestClient(app)
 
-
 def test_jobs_endpoint_success():
     mocked_jobs = {
         "total_found": 2,
