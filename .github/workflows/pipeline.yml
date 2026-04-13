@@ -23,7 +23,8 @@ jobs:
         uv venv
         source .venv/bin/activate
         uv sync --dev
-- name: Run tests with coverage
+        
+    - name: Run tests with coverage
       run: |
         source .venv/bin/activate
         coverage run --source=app -m pytest
