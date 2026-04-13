@@ -6,7 +6,7 @@ from app.modules.jobs.service import fetch_jobs_from_adzuna
 
 router = APIRouter()
 
-@router.get("/stats")
+@router.get("/")
 async def get_stats(q: str = "python"):
     """
     Fetches live job data from Adzuna and calculates market statistics.

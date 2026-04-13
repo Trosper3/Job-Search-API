@@ -23,12 +23,12 @@ def test_jobs_endpoint_success(mock_adzuna_response):
         "total_found": 1,
         "jobs": [
             {
-                "id": "123",
-                "title": "Python Developer",
-                "company": "IBM",
-                "location": "Remote",
-                "description": "Build APIs",
-                "url": "https://example.com/job-123"
+                "id": "12345",
+                "title": "Software Engineer",
+                "company": "Apple Inc.",
+                "location": "Cupertino, CA",
+                "description": "We are looking for a Software Engineer to join our team.",
+                "url": "https://www.apple.com"
             }
         ]
     }
