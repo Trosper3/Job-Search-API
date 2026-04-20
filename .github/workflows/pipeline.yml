@@ -23,20 +23,33 @@ jobs:
           python-version: "3.12"
 
       - name: Install Doppler CLI
-        run: curl -Ls https://cli.doppler.com/install.sh | sh
+        if: ${{ secrets.DOPPLER_TOKEN != '' }}
+        run: curl -Ls https://cli.doppler.com/install.sh | sudo sh
 
-      - name: Install dependencies and run tests
+      - name: Install dependencies
+        run: |
+          pip install uv
+          uv venv
+          source .venv/bin/activate
+          uv sync --dev
+
+      - name: Run tests with Doppler secrets
+        if: ${{ secrets.DOPPLER_TOKEN != '' }}
         env:
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
         run: |
           doppler run --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" -- bash -lc '
-            pip install uv
-            uv venv
             source .venv/bin/activate
-            uv sync --dev
             coverage run --source=app -m pytest
             coverage report --fail-under=80
           '
+
+      - name: Run tests without Doppler
+        if: ${{ secrets.DOPPLER_TOKEN == '' }}
+        run: |
+          source .venv/bin/activate
+          coverage run --source=app -m pytest
+          coverage report --fail-under=80
 
   build-and-push-docker:
     needs: test
