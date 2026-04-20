@@ -15,7 +15,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: "3.11"
+        python-version: "3.12"  # Fixed: upgraded to match pyproject.toml
 
     - name: Install dependencies
       run: |
@@ -29,3 +29,26 @@ jobs:
         source .venv/bin/activate
         coverage run --source=app -m pytest
         coverage report
+
+# Docker Build and push
+
+build-and-push-docker:
+    needs: test # Only run this if the tests above pass
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/job-search-api:latest
