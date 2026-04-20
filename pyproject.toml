@@ -54,3 +54,6 @@ exclude_lines = [
     "    @abstractmethod",
     "    @abc.abstractmethod",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
