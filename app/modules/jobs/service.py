@@ -3,14 +3,17 @@ import os
 from fastapi import HTTPException
 
 # In a real app, these would be loaded from your teammate's Doppler setup or a .env file
-ADZUNA_APP_ID = os.getenv("ADZUNA_APP_ID", "your_app_id_here")
-ADZUNA_APP_KEY = os.getenv("ADZUNA_APP_KEY", "your_app_key_here")
+ADZUNA_APP_ID = os.getenv("ADZUNA_APP_ID")
+ADZUNA_APP_KEY = os.getenv("ADZUNA_APP_KEY")
 BASE_URL = "https://api.adzuna.com/v1/api/jobs/us/search/1"
 
 async def fetch_jobs_from_adzuna(query: str):
     """
     Makes an async HTTP GET request to the Adzuna API.
     """
+    if not ADZUNA_APP_ID or not ADZUNA_APP_KEY:
+        raise HTTPException(status_code=500, detail="Adzuna credentials are not configured / correct")
+    
     # Set up the parameters for the API call
     params = {
         "app_id": ADZUNA_APP_ID,
