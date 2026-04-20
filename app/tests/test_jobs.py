@@ -114,3 +114,18 @@ def test_fetch_jobs_from_adzuna_raises_on_non_200_response():
 
     assert getattr(exc_info.value, "status_code", None) == 500
     assert getattr(exc_info.value, "detail", None) == "Failed to fetch jobs from external API"
+
+
+def test_fetch_jobs_from_adzuna_raises_when_credentials_missing():
+    """Raises an HTTPException before making a request when credentials are absent."""
+    with (
+        patch.object(jobs_service, "ADZUNA_APP_ID", None),
+        patch.object(jobs_service, "ADZUNA_APP_KEY", None),
+        patch("app.modules.jobs.service.httpx.AsyncClient") as mock_async_client,
+    ):
+        with pytest.raises(Exception) as exc_info:
+            asyncio.run(jobs_service.fetch_jobs_from_adzuna("python"))
+
+    assert getattr(exc_info.value, "status_code", None) == 500
+    assert getattr(exc_info.value, "detail", None) == "Adzuna credentials are not configured / correct"
+    mock_async_client.assert_not_called()
