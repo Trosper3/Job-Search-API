@@ -1,38 +1,22 @@
 from fastapi import APIRouter
-from .service import calculate_job_stats
+from app.modules.stats.service import calculate_job_stats
 
-router = APIRouter(
-    tags=["stats"]
-)
 
-@router.get("/")
-async def get_job_stats(q: str = ""):
+from app.modules.jobs.service import fetch_jobs_from_adzuna
+
+router = APIRouter()
+
+@router.get("")
+async def get_stats(q: str = "python"):
     """
-    Computes statistics for a given job search query.
+    Fetches live job data from Adzuna and calculates market statistics.
+    The 'q' parameter defaults to 'python' if the user doesn't provide one.
     """
-    mock_adzuna_data = {
-        "count": 3,
-        "results": [
-            {
-                "title": "Python Backend Engineer",
-                "company": {"display_name": "TechFlow"},
-                "location": {"display_name": "Remote"},
-                "description": "This is a fully remote position."
-            },
-            {
-                "title": "Data Scientist",
-                "company": {"display_name": "Health Analytics"},
-                "location": {"display_name": "Austin, TX"},
-                "description": "On-site role in Texas."
-            },
-            {
-                "title": "Junior Python Developer",
-                "company": {"display_name": "TechFlow"},
-                "location": {"display_name": "Remote"},
-                "description": "Work from anywhere."
-            }
-        ]
-    }
-
-    stats = calculate_job_stats(mock_adzuna_data)
-    return stats
+    # 1. Call the jobs module service to securely fetch live Adzuna data
+    live_data = await fetch_jobs_from_adzuna(q)
+    
+    # 2. Pass the live data into our math engine
+    final_stats = calculate_job_stats(live_data)
+    
+    # 3. Return the calculated business insights
+    return final_stats
