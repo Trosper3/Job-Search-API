@@ -5,39 +5,45 @@ on:
     branches: [main]
   pull_request:
 
+env:
+  DOPPLER_PROJECT: team-1
+  DOPPLER_CONFIG: dev
+
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.12"  # Fixed: upgraded to match pyproject.toml
+      - name: Check out source code
+        uses: actions/checkout@v4
 
-    - name: Install dependencies
-      run: |
-        pip install uv
-        uv venv
-        source .venv/bin/activate
-        uv sync --dev
-      
-- name: Run tests with coverage
-      run: |
-        source .venv/bin/activate
-        coverage run --source=app -m pytest
-        coverage report
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
-# Docker Build and push
+      - name: Install Doppler CLI
+        run: curl -Ls https://cli.doppler.com/install.sh | sh
 
-build-and-push-docker:
-    needs: test # Only run this if the tests above pass
+      - name: Install dependencies and run tests
+        env:
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+        run: |
+          doppler run --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" -- bash -lc '
+            pip install uv
+            uv venv
+            source .venv/bin/activate
+            uv sync --dev
+            coverage run --source=app -m pytest
+            coverage report --fail-under=80
+          '
+
+  build-and-push-docker:
+    needs: test
     runs-on: ubuntu-latest
-    
+
     steps:
-      - name: Checkout source code
+      - name: Check out source code
         uses: actions/checkout@v4
 
       - name: Log in to Docker Hub
