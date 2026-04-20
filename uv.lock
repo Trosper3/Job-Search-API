@@ -221,11 +221,10 @@ wheels = [
 [[package]]
 name = "job-search-api"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
     { name = "httpx" },
-    { name = "pytest-cov" },
     { name = "uvicorn" },
 ]
 
@@ -233,20 +232,21 @@ dependencies = [
 dev = [
     { name = "coverage" },
     { name = "pytest" },
+    { name = "pytest-cov" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "fastapi" },
+    { name = "fastapi", specifier = ">=0.120.2" },
     { name = "httpx", specifier = ">=0.28.1" },
-    { name = "pytest-cov", specifier = ">=7.1.0" },
-    { name = "uvicorn" },
+    { name = "uvicorn", specifier = ">=0.38.0" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "coverage", specifier = ">=7.13.5" },
     { name = "pytest", specifier = ">=9.0.2" },
+    { name = "pytest-cov", specifier = ">=7.1.0" },
 ]
 
 [[package]]
