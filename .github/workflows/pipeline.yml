@@ -1,54 +1,203 @@
-name: CI Pipeline
+name: CI/CD
 
 on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: "3.12"
+  IMAGE_NAME: job-search-api
+  CONTAINER_NAME: job-search-api
+  CONTAINER_PORT: "8000"
 
 jobs:
   test:
+    name: Test
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.12"  # Fixed: upgraded to match pyproject.toml
-
-    - name: Install dependencies
-      run: |
-        pip install uv
-        uv venv
-        source .venv/bin/activate
-        uv sync --dev
-      
-- name: Run tests with coverage
-      run: |
-        source .venv/bin/activate
-        coverage run --source=app -m pytest
-        coverage report
-
-# Docker Build and push
-
-build-and-push-docker:
-    needs: test # Only run this if the tests above pass
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout source code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Log in to Docker Hub
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Run unit tests with coverage gate
+        env:
+          ADZUNA_APP_ID: test-id
+          ADZUNA_APP_KEY: test-key
+        run: uv run pytest -m "not integration" --cov=app --cov-report=term --cov-report=xml --cov-fail-under=80
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml
+
+  quality-gates:
+    name: Quality Gates
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Lint with Ruff
+        run: uvx ruff check app tests
+
+      - name: Fetch secrets from Doppler
+        if: github.event_name != 'pull_request'
+        uses: dopplerhq/secrets-fetch-action@v1.2.0
+        id: doppler
+        with:
+          doppler-token: ${{ secrets.DOPPLER_SERVICE_TOKEN }}
+
+      - name: Preflight Doppler outputs for Adzuna
+        if: github.event_name != 'pull_request'
+        run: |
+          if [ -z "${{ steps.doppler.outputs.ADZUNA_APP_ID }}" ]; then
+            echo "Missing Doppler key: ADZUNA_APP_ID"
+            exit 1
+          fi
+          if [ -z "${{ steps.doppler.outputs.ADZUNA_APP_KEY }}" ]; then
+            echo "Missing Doppler key: ADZUNA_APP_KEY"
+            exit 1
+          fi
+
+      - name: Verify Adzuna credentials against live API
+        if: github.event_name != 'pull_request'
+        run: |
+          STATUS_CODE=$(curl -s -o response.json -w "%{http_code}" \
+            "https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${{ steps.doppler.outputs.ADZUNA_APP_ID }}&app_key=${{ steps.doppler.outputs.ADZUNA_APP_KEY }}&what=software+engineer&results_per_page=1")
+
+          if [ "$STATUS_CODE" != "200" ]; then
+            echo "Adzuna credential validation failed with status: $STATUS_CODE"
+            cat response.json
+            exit 1
+          fi
+
+          echo "Adzuna credentials are valid."
+
+  build:
+    name: Build and Push
+    needs: quality-gates
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch secrets from Doppler
+        uses: dopplerhq/secrets-fetch-action@v1.2.0
+        id: doppler
+        with:
+          doppler-token: ${{ secrets.DOPPLER_SERVICE_TOKEN }}
+
+      - name: Preflight Doppler outputs for Docker Hub
+        run: |
+          if [ -z "${{ steps.doppler.outputs.DOCKER_USERNAME }}" ]; then
+            echo "Missing Doppler key: DOCKER_USERNAME"
+            exit 1
+          fi
+          if [ -z "${{ steps.doppler.outputs.DOCKER_PASSWORD }}" ]; then
+            echo "Missing Doppler key: DOCKER_PASSWORD"
+            exit 1
+          fi
+
+      - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ steps.doppler.outputs.DOCKER_USERNAME }}
+          password: ${{ steps.doppler.outputs.DOCKER_PASSWORD }}
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+      - name: Build Docker image
+        run: docker build -t ${{ steps.doppler.outputs.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest .
+
+      - name: Push Docker image
+        run: |
+          docker push ${{ steps.doppler.outputs.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+          docker tag ${{ steps.doppler.outputs.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest ${{ steps.doppler.outputs.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ steps.doppler.outputs.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    steps:
+      - name: Fetch secrets from Doppler
+        uses: dopplerhq/secrets-fetch-action@v1.2.0
+        id: doppler
         with:
-          context: .
-          push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/job-search-api:latest
+          doppler-token: ${{ secrets.DOPPLER_SERVICE_TOKEN }}
+
+      - name: Preflight Doppler outputs for deploy
+        run: |
+          if [ -z "${{ steps.doppler.outputs.AWS_IP }}" ]; then
+            echo "Missing Doppler key: AWS_IP"
+            exit 1
+          fi
+          if [ -z "${{ steps.doppler.outputs.AWS_EC2_USERNAME }}" ]; then
+            echo "Missing Doppler key: AWS_EC2_USERNAME"
+            exit 1
+          fi
+          if [ -z "${{ steps.doppler.outputs.SSH_AWS_PEM }}" ]; then
+            echo "Missing Doppler key: SSH_AWS_PEM"
+            exit 1
+          fi
+          if [ -z "${{ steps.doppler.outputs.DOCKER_USERNAME }}" ]; then
+            echo "Missing Doppler key: DOCKER_USERNAME"
+            exit 1
+          fi
+          if [ -z "${{ steps.doppler.outputs.DOCKER_PASSWORD }}" ]; then
+            echo "Missing Doppler key: DOCKER_PASSWORD"
+            exit 1
+          fi
+          if [ -z "${{ steps.doppler.outputs.ADZUNA_APP_ID }}" ]; then
+            echo "Missing Doppler key: ADZUNA_APP_ID"
+            exit 1
+          fi
+          if [ -z "${{ steps.doppler.outputs.ADZUNA_APP_KEY }}" ]; then
+            echo "Missing Doppler key: ADZUNA_APP_KEY"
+            exit 1
+          fi
+
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ steps.doppler.outputs.AWS_IP }}
+          username: ${{ steps.doppler.outputs.AWS_EC2_USERNAME }}
+          key: ${{ steps.doppler.outputs.SSH_AWS_PEM }}
+          port: ${{ steps.doppler.outputs.AWS_EC2_PORT || 22 }}
+          script: |
+            docker login -u "${{ steps.doppler.outputs.DOCKER_USERNAME }}" -p "${{ steps.doppler.outputs.DOCKER_PASSWORD }}"
+            docker rm -f "${{ env.CONTAINER_NAME }}" || true
+            docker pull "${{ steps.doppler.outputs.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest"
+            docker run -d \
+              --name "${{ env.CONTAINER_NAME }}" \
+              --restart always \
+              -p "${{ env.CONTAINER_PORT }}:${{ env.CONTAINER_PORT }}" \
+              -e ADZUNA_APP_ID="${{ steps.doppler.outputs.ADZUNA_APP_ID }}" \
+              -e ADZUNA_APP_KEY="${{ steps.doppler.outputs.ADZUNA_APP_KEY }}" \
+              "${{ steps.doppler.outputs.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest"
+            docker ps --filter "name=${{ env.CONTAINER_NAME }}" --filter "status=running" --format "{{.Names}}" | grep -q "^${{ env.CONTAINER_NAME }}$"
