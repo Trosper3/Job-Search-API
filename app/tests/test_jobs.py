@@ -8,7 +8,6 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.modules.jobs import service as jobs_service
-from unittest.mock import patch
 
 client = TestClient(app)
 
