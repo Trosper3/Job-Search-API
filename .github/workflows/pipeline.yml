@@ -11,7 +11,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
@@ -23,8 +23,8 @@ jobs:
         uv venv
         source .venv/bin/activate
         uv sync --dev
-      
-- name: Run tests with coverage
+
+    - name: Run tests with coverage
       run: |
         source .venv/bin/activate
         coverage run --source=app -m pytest
@@ -32,10 +32,10 @@ jobs:
 
 # Docker Build and push
 
-build-and-push-docker:
+  build-and-push-docker:
     needs: test # Only run this if the tests above pass
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
