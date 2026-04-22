@@ -52,3 +52,11 @@ def extract_keywords(text: str, max_keywords: int = 10) -> list[str]:
 def analyze_description(description: str) -> dict[str, list[str]]:
     """Extract skills from a raw job description."""
     return {"skills": extract_keywords(description)}
+
+
+def analyze_jobs_data(jobs_data: dict) -> dict[str, list[str]]:
+    """Extract skills from the descriptions contained in fetched jobs data."""
+    jobs = jobs_data.get("jobs", [])
+    descriptions = [job.get("description", "") for job in jobs if job.get("description")]
+    combined_text = " ".join(descriptions)
+    return {"skills": extract_keywords(combined_text)}

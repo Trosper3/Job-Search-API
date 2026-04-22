@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Query
 
-from app.modules.analyze.service import analyze_description
+from app.modules.analyze.service import analyze_jobs_data
+from app.modules.jobs.service import fetch_jobs_from_adzuna
 
 
 router = APIRouter(
@@ -9,16 +9,8 @@ router = APIRouter(
 )
 
 
-class AnalyzeRequest(BaseModel):
-    """Input payload for description analysis."""
-
-    description: str = Field(..., min_length=1)
-
-
-@router.post("")
-async def analyze_job_text(payload: AnalyzeRequest):
-    """Analyze a job description and return extracted skills."""
-    if not payload.description.strip():
-        raise HTTPException(status_code=400, detail="description must not be empty")
-
-    return analyze_description(payload.description)
+@router.get("")
+async def analyze_live_jobs(q: str = Query(..., description="The job title or keyword to analyze")):
+    """Fetch live Adzuna jobs and extract common skills from descriptions."""
+    live_jobs = await fetch_jobs_from_adzuna(q)
+    return analyze_jobs_data(live_jobs)
