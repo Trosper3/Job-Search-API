@@ -115,29 +115,29 @@ jobs:
 
       - name: Preflight Doppler outputs for Docker Hub
         run: |
-          if [ -z "${{ steps.doppler.outputs.DOCKER_USERNAME }}" ]; then
-            echo "Missing Doppler key: DOCKER_USERNAME"
+          if [ -z "${{ steps.doppler.outputs.DOCKERHUB_USERNAME }}" ]; then
+            echo "Missing Doppler key: DOCKERHUB_USERNAME"
             exit 1
           fi
-          if [ -z "${{ steps.doppler.outputs.DOCKER_PASSWORD }}" ]; then
-            echo "Missing Doppler key: DOCKER_PASSWORD"
+          if [ -z "${{ steps.doppler.outputs.DOCKERHUB_TOKEN }}" ]; then
+            echo "Missing Doppler key: DOCKERHUB_TOKEN"
             exit 1
           fi
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ steps.doppler.outputs.DOCKER_USERNAME }}
-          password: ${{ steps.doppler.outputs.DOCKER_PASSWORD }}
+          username: ${{ steps.doppler.outputs.DOCKERHUB_USERNAME }}
+          password: ${{ steps.doppler.outputs.DOCKERHUB_TOKEN }}
 
       - name: Build Docker image
-        run: docker build -t ${{ steps.doppler.outputs.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest .
+        run: docker build -t ${{ steps.doppler.outputs.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest .
 
       - name: Push Docker image
         run: |
-          docker push ${{ steps.doppler.outputs.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
-          docker tag ${{ steps.doppler.outputs.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest ${{ steps.doppler.outputs.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          docker push ${{ steps.doppler.outputs.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ steps.doppler.outputs.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+          docker tag ${{ steps.doppler.outputs.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest ${{ steps.doppler.outputs.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ steps.doppler.outputs.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
   deploy:
     name: Deploy
@@ -165,12 +165,12 @@ jobs:
             echo "Missing Doppler key: SSH_AWS_PEM"
             exit 1
           fi
-          if [ -z "${{ steps.doppler.outputs.DOCKER_USERNAME }}" ]; then
-            echo "Missing Doppler key: DOCKER_USERNAME"
+          if [ -z "${{ steps.doppler.outputs.DOCKERHUB_USERNAME }}" ]; then
+            echo "Missing Doppler key: DOCKERHUB_USERNAME"
             exit 1
           fi
-          if [ -z "${{ steps.doppler.outputs.DOCKER_PASSWORD }}" ]; then
-            echo "Missing Doppler key: DOCKER_PASSWORD"
+          if [ -z "${{ steps.doppler.outputs.DOCKERHUB_TOKEN }}" ]; then
+            echo "Missing Doppler key: DOCKERHUB_TOKEN"
             exit 1
           fi
           if [ -z "${{ steps.doppler.outputs.ADZUNA_APP_ID }}" ]; then
@@ -190,14 +190,14 @@ jobs:
           key: ${{ steps.doppler.outputs.SSH_AWS_PEM }}
           port: ${{ steps.doppler.outputs.AWS_EC2_PORT || 22 }}
           script: |
-            docker login -u "${{ steps.doppler.outputs.DOCKER_USERNAME }}" -p "${{ steps.doppler.outputs.DOCKER_PASSWORD }}"
+            docker login -u "${{ steps.doppler.outputs.DOCKERHUB_USERNAME }}" -p "${{ steps.doppler.outputs.DOCKERHUB_TOKEN }}"
             docker rm -f "${{ env.CONTAINER_NAME }}" || true
-            docker pull "${{ steps.doppler.outputs.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest"
+            docker pull "${{ steps.doppler.outputs.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest"
             docker run -d \
               --name "${{ env.CONTAINER_NAME }}" \
               --restart always \
               -p "${{ env.CONTAINER_PORT }}:${{ env.CONTAINER_PORT }}" \
               -e ADZUNA_APP_ID="${{ steps.doppler.outputs.ADZUNA_APP_ID }}" \
               -e ADZUNA_APP_KEY="${{ steps.doppler.outputs.ADZUNA_APP_KEY }}" \
-              "${{ steps.doppler.outputs.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest"
+              "${{ steps.doppler.outputs.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest"
             docker ps --filter "name=${{ env.CONTAINER_NAME }}" --filter "status=running" --format "{{.Names}}" | grep -q "^${{ env.CONTAINER_NAME }}$"
