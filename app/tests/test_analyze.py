@@ -10,44 +10,40 @@ client = TestClient(app)
 
 
 def test_analyze_valid_request():
-    """Returns mocked skills for a valid description payload."""
-    expected = {"skills": ["python", "fastapi"]}
-    description = "Python developer needed with FastAPI, SQL, and Docker experience."
+    """Returns 405 because POST /analyze was removed in favor of live GET flow."""
+    response = client.post(
+        "/analyze",
+        json={"description": "Python developer needed with FastAPI"},
+    )
 
-    with patch("app.modules.analyze.routes.analyze_description", return_value=expected) as mock_analyze:
-        response = client.post(
-            "/analyze",
-            json={"description": description},
-        )
+    assert response.status_code == 405
+
+
+def test_analyze_live_jobs_success():
+    """Returns analyzed skills derived from live jobs payload."""
+    mocked_jobs = {
+        "total_found": 2,
+        "jobs": [
+            {"description": "Python FastAPI SQL Docker"},
+            {"description": "Python APIs and cloud deployment"},
+        ],
+    }
+    expected = {"skills": ["python", "apis", "cloud"]}
+
+    with (
+        patch("app.modules.analyze.routes.fetch_jobs_from_adzuna", return_value=mocked_jobs) as mock_fetch,
+        patch("app.modules.analyze.routes.analyze_jobs_data", return_value=expected) as mock_analyze_jobs,
+    ):
+        response = client.get("/analyze", params={"q": "python"})
 
     assert response.status_code == 200
     assert response.json() == expected
-    mock_analyze.assert_called_once_with(description)
+    mock_fetch.assert_called_once_with("python")
+    mock_analyze_jobs.assert_called_once_with(mocked_jobs)
 
 
-def test_analyze_missing_fields():
-    """Returns validation error when required fields are missing."""
-    response = client.post("/analyze", json={})
-
-    assert response.status_code == 422
-
-
-def test_analyze_invalid_json():
-    """Returns validation error when payload is invalid JSON."""
-    response = client.post(
-        "/analyze",
-        content='{"description": "python"',
-        headers={"Content-Type": "application/json"},
-    )
+def test_analyze_live_jobs_requires_query():
+    """Returns validation error when q is missing for live analyze endpoint."""
+    response = client.get("/analyze")
 
     assert response.status_code == 422
-
-
-def test_analyze_whitespace_only_description():
-    """Returns bad request when description contains only whitespace."""
-    with patch("app.modules.analyze.routes.analyze_description") as mock_analyze:
-        response = client.post("/analyze", json={"description": "   "})
-
-    assert response.status_code == 400
-    assert response.json()["detail"] == "description must not be empty"
-    mock_analyze.assert_not_called()

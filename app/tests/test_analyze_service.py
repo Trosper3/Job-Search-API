@@ -1,6 +1,6 @@
 """Unit tests for analyze service logic."""
 
-from app.modules.analyze.service import analyze_description, extract_keywords
+from app.modules.analyze.service import analyze_description, analyze_jobs_data, extract_keywords
 
 
 def test_extract_keywords_returns_ranked_keywords():
@@ -28,3 +28,26 @@ def test_analyze_description_wraps_skills_payload():
 
     assert "skills" in result
     assert isinstance(result["skills"], list)
+
+
+def test_analyze_jobs_data_aggregates_descriptions():
+    """Aggregates job descriptions and extracts skills from combined text."""
+    jobs_data = {
+        "jobs": [
+            {"description": "Python FastAPI SQL"},
+            {"description": "Docker Python APIs"},
+            {"title": "Missing description"},
+        ]
+    }
+
+    result = analyze_jobs_data(jobs_data)
+
+    assert "skills" in result
+    assert "python" in result["skills"]
+
+
+def test_analyze_jobs_data_handles_missing_jobs_key():
+    """Returns empty skills when jobs payload has no descriptions."""
+    result = analyze_jobs_data({})
+
+    assert result == {"skills": []}
