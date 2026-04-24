@@ -14,8 +14,8 @@ MOCK_ADZUNA_DATA = {
 }
 
 @patch("app.modules.stats.routes.fetch_jobs_from_adzuna")
-def test_stats_endpoint_success(mock_fetch):
-    mock_fetch.return_value = MOCK_ADZUNA_DATA
+def test_stats_endpoint_success(mock_adzuna_response):
+    mock_adzuna_response.return_value = MOCK_ADZUNA_DATA
 
     response = client.get("/stats?q=python")
 
