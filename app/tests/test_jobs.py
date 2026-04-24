@@ -15,8 +15,8 @@ def test_jobs_endpoint_success():
     mocked_jobs = {
         "total_found": 2,
         "jobs": [
-            {"id": "job-1", "title": "Python Developer", "company": "TechFlow", "location": "Remote"},
-            {"id": "job-2", "title": "Backend Engineer", "company": "DataWorks", "location": "New York"},
+            {"id": "job-1", "title": "Python Developer", "company": "Apple Inc.", "location": "Cupertino, CA"},
+            {"id": "job-2", "title": "Backend Engineer", "company": "DataWorks", "location": "New York, NY"},
         ],
     }
 
