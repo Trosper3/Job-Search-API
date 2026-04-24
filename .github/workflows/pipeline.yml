@@ -196,7 +196,7 @@ jobs:
             docker run -d \
               --name "${{ env.CONTAINER_NAME }}" \
               --restart always \
-              -p "${{ env.CONTAINER_PORT }}:${{ env.CONTAINER_PORT }}" \
+              -p "80:${{ env.CONTAINER_PORT }}" \
               -e ADZUNA_APP_ID="${{ steps.doppler.outputs.ADZUNA_APP_ID }}" \
               -e ADZUNA_APP_KEY="${{ steps.doppler.outputs.ADZUNA_APP_KEY }}" \
               "${{ steps.doppler.outputs.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest"
